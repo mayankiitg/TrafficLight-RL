@@ -188,7 +188,7 @@ flow_params = dict(
     exp_tag='traffic_light_grid',
 
     # name of the flow environment the experiment is running on
-    env_name=TrafficLightGridEnv,
+    env_name=TrafficLightGridPOEnv,
 
     # name of the network class the experiment is running on
     network=TrafficLightGridNetwork,
