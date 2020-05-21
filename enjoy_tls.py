@@ -1,10 +1,8 @@
-## This file is used to run the trained model
-
 import gym
 
 from baselines import deepq
-from TrafficLightFlow import GetTrafficLightEnv
-
+from TrafficLightFlow import GetTrafficLightEnv, getFlowParamsForTls
+from flow.core.experiment import Experiment 
 
 t = 0
 def static_rl_actions(state):
@@ -18,20 +16,16 @@ def main():
     act = deepq.learn(env, network='mlp', total_timesteps=0, load_path="tls_model.pkl")
     reward = 0
     iterations = 1
+    exp = Experiment(getFlowParamsForTls())
 
-    for i in range(iterations):
-        obs, done = env.reset(), False
-        episode_rew = 0
-        while not done:
-            env.render()
-            #for RL use: act(obs[None])[0]
-            action = static_rl_actions(obs)
+    ## This is the RL agent that is using the trained model that we saved from train_tls file
+    rl_agent = lambda state: act(state[None])[0]
 
-            print(f'computed action: {action}')
+    ## This is the static agent that switches the light every 20s
+    static_agent = static_rl_actions
 
-            obs, rew, done, _ = env.step(action)
-            episode_rew += rew
-        print("Episode reward", episode_rew)
+    # Passing the appropriate lambda among static and rl, you can perform the experiment
+    exp.run(10, rl_agent, convert_to_csv=True)
 
 
 if __name__ == '__main__':
