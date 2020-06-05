@@ -10,7 +10,7 @@ from flow.core.experiment import Experiment
 from flow.utils.registry import make_create_env
 
 # time horizon of a single rollout
-HORIZON = 200
+HORIZON = 300
 # number of rollouts per training iteration
 N_ROLLOUTS = 10
 # number of parallel workers
@@ -65,17 +65,54 @@ def get_inflow_params(col_num, row_num, additional_net_params):
  
     inflow = InFlows()
     outer_edges = gen_edges(col_num, row_num)
+
+    def getProb(i):
+        if i < 2:
+            return 0.01
+        return 0.3
+
     for i in range(len(outer_edges)):
         inflow.add(
             veh_type='idm',
             edge=outer_edges[i],
-            probability=0.05*(i+1),
+            probability=getProb(i),
             depart_lane='free',
             depart_speed=10)
     net = NetParams(
         inflows=inflow,
         additional_params=additional_net_params)
     return initial, net
+
+def get_non_flow_params(enter_speed, add_net_params):
+    """Define the network and initial params in the absence of inflows.
+
+    Note that when a vehicle leaves a network in this case, it is immediately
+    returns to the start of the row/column it was traversing, and in the same
+    direction as it was before.
+
+    Parameters
+    ----------
+    enter_speed : float
+        initial speed of vehicles as they enter the network.
+    add_net_params: dict
+        additional network-specific parameters (unique to the traffic light grid)
+
+    Returns
+    -------
+    flow.core.params.InitialConfig
+        parameters specifying the initial configuration of vehicles in the
+        network
+    flow.core.params.NetParams
+        network-specific parameters used to generate the network
+    """
+    additional_init_params = {'enter_speed': enter_speed}
+    initial = InitialConfig(
+        spacing='custom', additional_params=additional_init_params)
+    net = NetParams(additional_params=add_net_params)
+
+    return initial, net
+
+
 
 V_ENTER = 10
 INNER_LENGTH = 300
@@ -158,7 +195,7 @@ flow_params = dict(
     # sumo-related parameters (see flow.core.params.SumoParams)
     sim=SumoParams(
         sim_step=1,
-        render=True,
+        render=False,
         emission_path="Results"
     ),
  
@@ -198,6 +235,9 @@ def GetTrafficLightEnv():
     # Create the environment.
     env = create_env()
     return env
+
+def getFlowParamsForTls():
+    return flow_params
 
 # exp = Experiment(flow_params)
 # exp.run(1, convert_to_csv=True)
