@@ -6,13 +6,19 @@ from flow.controllers import SimCarFollowingController, GridRouter
 from flow.envs import TrafficLightGridPOEnv, TrafficLightGridEnv, AccelEnv
 from flow.networks import TrafficLightGridNetwork
 from flow.core.experiment import Experiment
-#from StaticAgent import static_rl_actions
+from StaticAgent import static_rl_actions
 from flow.utils.registry import make_create_env
 
+##########CONFIGURATION
+isTesting = False
+
+#####
+
+
 # time horizon of a single rollout
-HORIZON = 300
+HORIZON = 200
 # number of rollouts per training iteration
-N_ROLLOUTS = 10
+N_ROLLOUTS = 30
 # number of parallel workers
 N_CPUS = 2
 # set to True if you would like to run the experiment with inflows of vehicles
@@ -41,7 +47,7 @@ def gen_edges(col_num, row_num):
         edges += ['bot' + str(i) + '_' + '0']
         edges += ['top' + str(i) + '_' + str(col_num)]
     return edges
-def get_inflow_params(col_num, row_num, additional_net_params):
+def get_inflow_params(col_num, row_num, additional_net_params, inflow_probability):
     """Define the network and initial params in the presence of inflows.
     Parameters
     ----------
@@ -66,16 +72,16 @@ def get_inflow_params(col_num, row_num, additional_net_params):
     inflow = InFlows()
     outer_edges = gen_edges(col_num, row_num)
 
-    def getProb(i):
-        if i < 2:
-            return 0.01
-        return 0.3
+    # def getProb(i):
+    #     if i < 2:
+    #         return 0.05
+    #     return 0.15
 
     for i in range(len(outer_edges)):
         inflow.add(
             veh_type='idm',
             edge=outer_edges[i],
-            probability=getProb(i),
+            probability=inflow_probability[i],
             depart_lane='free',
             depart_speed=10)
     net = NetParams(
@@ -141,7 +147,7 @@ grid_array = {
  
 additional_env_params = {
         'target_velocity': 50,
-        'switch_time': 3.0,
+        'switch_time': 4.0,
         'num_observed': 2,
         'discrete': True,
         'tl_type': 'controlled'
@@ -169,57 +175,18 @@ vehicles.add(
  
 # collect the initialization and network-specific parameters based on the
 # choice to use inflows or not
-if USE_INFLOWS:
-    initial_config, net_params = get_inflow_params(
-        col_num=N_COLUMNS,
-        row_num=N_ROWS,
-        additional_net_params=additional_net_params)
-else:
-    initial_config, net_params = get_non_flow_params(
-        enter_speed=V_ENTER,
-        add_net_params=additional_net_params)
+# if USE_INFLOWS:
+#     initial_config, net_params = get_inflow_params(
+#         col_num=N_COLUMNS,
+#         row_num=N_ROWS,
+#         additional_net_params=additional_net_params)
+# else:
+#     initial_config, net_params = get_non_flow_params(
+#         enter_speed=V_ENTER,
+#         add_net_params=additional_net_params)
  
 
-flow_params = dict(
-    # name of the experiment
-    exp_tag='traffic_light_grid',
- 
-    # name of the flow environment the experiment is running on
-    env_name=TrafficLightGridPOEnv,
- 
-    # name of the network class the experiment is running on
-    network=TrafficLightGridNetwork,
- 
-    # simulator that is used by the experiment
-    simulator='traci',
-    # sumo-related parameters (see flow.core.params.SumoParams)
-    sim=SumoParams(
-        sim_step=1,
-        render=False,
-        emission_path="Results"
-    ),
- 
-    # environment related parameters (see flow.core.params.EnvParams)
-    env=EnvParams(
-        horizon=HORIZON,
-        additional_params=additional_env_params,
-    ),
- 
-    # network-related parameters (see flow.core.params.NetParams and the
-    # network's documentation or ADDITIONAL_NET_PARAMS component). This is
-    # filled in by the setup_exps method below.
-    net=net_params,
- 
-    # vehicles to be placed in the network at the start of a rollout (see
-    # flow.core.params.VehicleParams)
-    veh=vehicles,
- 
-    # parameters specifying the positioning of vehicles upon initialization/
-    # reset (see flow.core.params.InitialConfig). This is filled in by the
-    # setup_exps method below.
-    initial=initial_config,
-)
- 
+
 
 t = 0
 
@@ -229,15 +196,63 @@ def rl_actions(state):
     return [t%30 == 0]    
 
 
-def GetTrafficLightEnv():
+def GetTrafficLightEnv(inflow_probability, render=False, evaluate=False):
+    initial_config, net_params = get_inflow_params(
+        col_num=N_COLUMNS,
+        row_num=N_ROWS,
+        additional_net_params=additional_net_params,
+        inflow_probability=inflow_probability)
+    
+    flow_params = dict(
+        # name of the experiment
+        exp_tag='traffic_light_grid',
+    
+        # name of the flow environment the experiment is running on
+        env_name=TrafficLightGridPOEnv,
+    
+        # name of the network class the experiment is running on
+        network=TrafficLightGridNetwork,
+    
+        # simulator that is used by the experiment
+        simulator='traci',
+        # sumo-related parameters (see flow.core.params.SumoParams)
+        sim=SumoParams(
+            sim_step=1,
+            render=render,
+            emission_path="Results",
+            restart_instance=True
+        ),
+    
+        # environment related parameters (see flow.core.params.EnvParams)
+        env=EnvParams(
+            horizon=HORIZON,
+            additional_params=additional_env_params,
+            evaluate=evaluate
+        ),
+    
+        # network-related parameters (see flow.core.params.NetParams and the
+        # network's documentation or ADDITIONAL_NET_PARAMS component). This is
+        # filled in by the setup_exps method below.
+        net=net_params,
+    
+        # vehicles to be placed in the network at the start of a rollout (see
+        # flow.core.params.VehicleParams)
+        veh=vehicles,
+    
+        # parameters specifying the positioning of vehicles upon initialization/
+        # reset (see flow.core.params.InitialConfig). This is filled in by the
+        # setup_exps method below.
+        initial=initial_config,
+    )
+    
     # Get the env name and a creator for the environment.
     create_env, _ = make_create_env(flow_params)
     # Create the environment.
     env = create_env()
     return env
 
-def getFlowParamsForTls():
-    return flow_params
+# def getFlowParamsForTls():
+#     return flow_params
 
 # exp = Experiment(flow_params)
-# exp.run(1, convert_to_csv=True)
+# exp.run(2, convert_to_csv=False)
