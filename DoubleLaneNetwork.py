@@ -173,9 +173,32 @@ class DoubleLaneNetwork(Network):
 
     def specify_routes(self, net_params):
         """See parent class."""
-        routes = defaultdict(list)
+        # rts = defaultdict(list)
+        # row_num = self.grid_array["row_num"]
+        # col_num = self.grid_array["col_num"]
+        # for i in range(row_num):
+        #     route_arr_bot = []
+        #     route_arr_top = []
+        #     for j in range(col_num + 1):
+        #         route_arr_bot += ["bot" + str(i) + '_' + str(j)]
+        #         route_arr_top += ["top" + str(i) + '_' + str(col_num - j)]
+        #     rts.update({"bot" + str(i) + '_' + '0': route_arr_bot})
+        #     rts.update({"top" + str(i) + '_' + str(col_num): route_arr_top})
 
+        # for i in range(col_num):
+        #     route_arr_left = []
+        #     route_arr_right = []
+        #     for j in range(row_num + 1):
+        #         route_arr_right += ["right" + str(j) + '_' + str(i)]
+        #         route_arr_left += ["left" + str(row_num - j) + '_' + str(i)]
+        #     rts.update({"left" + str(row_num) + '_' + str(i): route_arr_left})
+        #     rts.update({"left" + str(row_num) + '_' + str(i): route_arr_left})
+        #     rts.update({"right" + '0' + '_' + str(i): route_arr_right})
+        # #rts['right0_0_1'] =['right0_0_1', 'top0_0_1']
+        # print(rts)
+        # return rts
         # build row routes (vehicles go from left to right and vice versa)
+        routes = defaultdict(list)
         for i in range(self.row_num):
             bot_id = "bot{}_0".format(i)
             top_id = "top{}_{}".format(i, self.col_num)
@@ -190,6 +213,16 @@ class DoubleLaneNetwork(Network):
             for i in range(self.row_num + 1):
                 routes[left_id] += ["left{}_{}".format(self.row_num - i, j)]
                 routes[right_id] += ["right{}_{}".format(i, j)]
+        routes= {
+                    'bot0_0': [(['bot0_0', 'bot0_1'],0.5), (['bot0_0', 'right1_0'],0.5)], 
+                    'top0_1': [(['top0_1', 'top0_0'],0.5), (['top0_1', 'left0_0'],0.5)], 
+                    'left1_0': [(['left1_0', 'left0_0'],0.5), (['left1_0', 'bot0_1'],0.5)], 
+                    'right0_0': [(['right0_0', 'right1_0'],0.5), (['right0_0', 'top0_0'],0.5)]
+                }
+        # rts = {"edge0": [(["edge0", "edge1", "edge2", "edge3"], 1)],
+        #        "edge1": [(["edge1", "edge2", "edge3", "edge0"], 1)],
+        #        "edge2": [(["edge2", "edge3", "edge0", "edge1"], 1)],
+        #        "edge3": [(["edge3", "edge0", "edge1", "edge2"], 1)]}
         print(routes)
         return routes
 
@@ -441,7 +474,8 @@ class DoubleLaneNetwork(Network):
                 "priority": 78,
                 "from": from_node,
                 "to": to_node,
-                "length": length
+                "length": length,
+                "numLanes": 2
             }]
 
         for i in range(self.col_num):
@@ -501,26 +535,203 @@ class DoubleLaneNetwork(Network):
                 "toLane": str(lane),
                 "signal_group": signal_group
             }]
+        
+        def new_left_conn(originSide, destSide, from_id, to_id, lane, signal_group):
+            return [{
+                "from": originSide + from_id,
+                "to": destSide + to_id,
+                "fromLane": str(lane),
+                "toLane": str(lane),
+                "signal_group": signal_group
+            }]
 
-        # build connections at each inner node
-        for i in range(self.row_num):
-            for j in range(self.col_num):
-                node_id = "{}_{}".format(i, j)
-                right_node_id = "{}_{}".format(i, j + 1)
-                top_node_id = "{}_{}".format(i + 1, j)
+        lanes_horizontal = net_params.additional_params["horizontal_lanes"]
+        lanes_vertical = net_params.additional_params["vertical_lanes"]
 
+        row_num = self.grid_array["row_num"]
+        col_num = self.grid_array["col_num"]
+        con_dict = {}
+
+        # build connections
+        for i in range(row_num):
+            for j in range(col_num):
                 conn = []
-                for lane in range(self.vertical_lanes):
-                    conn += new_con("bot", node_id, right_node_id, lane, 1)
-                    conn += new_con("top", right_node_id, node_id, lane, 1)
-                for lane in range(self.horizontal_lanes):
-                    conn += new_con("right", node_id, top_node_id, lane, 2)
-                    conn += new_con("left", top_node_id, node_id, lane, 2)
+                node_index = i * col_num + j
+                node_id = "center{}".format(node_index)
+                index = "{}_{}".format(i, j)
+                for l in range(lanes_vertical):
+                    conn += [
+                        {"from": "bot" + index,
+                         "to": "bot" + "{}_{}".format(i, j + 1),
+                         "fromLane": str(l),
+                         "toLane": str(l),
+                         "signal_group": 1}
+                    ]
+                    conn += [
+                        {"from": "top" + "{}_{}".format(i, j + 1),
+                         "to": "top" + index,
+                         "fromLane": str(l),
+                         "toLane": str(l),
+                         "signal_group": 1}
+                        ]
 
-                node_id = "center{}".format(i * self.col_num + j)
+                for l_h in range(lanes_horizontal):
+                    conn += [
+                        {"from": "right" + index,
+                         "to": "right" + "{}_{}".format(i + 1, j),
+                         "fromLane": str(l_h),
+                         "toLane": str(l_h),
+                         "signal_group": 2}
+                    ]
+                    conn += [
+                        {"from": "left" + "{}_{}".format(i + 1, j),
+                         "to": "left" + index,
+                         "fromLane": str(l_h),
+                         "toLane": str(l_h),
+                         "signal_group": 2}
+                    ]
+
+
+
+                    """___________________MODIFICATION___________________"""
+
+                    """NBRT"""
+                    # if l_h == 0:
+                    #     conn += [
+                    #         {"from": "right" + index,
+                    #         "to": "bot" + "{}_{}".format(i, j+1),
+                    #         "fromLane": str(l_h),
+                    #         "toLane": str(l_h),
+                    #         "signal_group": 2}
+                    #         ]
+
+                    """NBLT: FIRST AND SECOND LANE"""
+                    if l_h == 1:
+                        conn += [
+                            {"from": "right" + index,
+                             "to": "top" + index,
+                             "fromLane": str(l_h),
+                             "toLane": str(0),
+                             "signal_group": 3}
+                        ]
+                        # conn += [
+                        #     {"from": "right" + index,
+                        #      "to": "top" + index,
+                        #      "fromLane": str(l_h),
+                        #      "toLane": str(1),
+                        #      "signal_group": 3}
+                        # ]
+
+                    """EBRT"""
+                    # if l_h == 0:
+                    #     conn += [
+                    #         {"from": "bot" + index,
+                    #          "to": "left" + index,
+                    #          "fromLane": str(l_h),
+                    #          "toLane": str(l_h),
+                    #          "signal_group": 1}
+                    #     ]
+
+                    """EBLT: FIRST AND SECOND LANE"""
+                    if l_h == 1:
+                        conn += [
+                            {"from": "bot" + index,
+                             "to": "right" + "{}_{}".format(i+1, j),
+                             "fromLane": str(l_h),
+                             "toLane": str(0),
+                             "signal_group": 4}
+                        ]
+
+                        # conn += [
+                        #     {"from": "bot" + index,
+                        #      "to": "right" + "{}_{}".format(i+1, j),
+                        #      "fromLane": str(l_h),
+                        #      "toLane": str(1),
+                        #      "signal_group": 4}
+                        # ]
+
+                    "SBRT"
+                    # if l_h == 0:
+                    #     conn += [
+                    #         {"from": "left" + "{}_{}".format(i+1, j),
+                    #          "to": "top" + index,
+                    #          "fromLane": str(l_h),
+                    #          "toLane": str(l_h),
+                    #          "signal_group": 2}
+                    #     ]
+
+                    """SBLT: FIRST AND SECOND LANE"""
+                    if l_h == 1:
+                        conn += [
+                            {"from": "left" + "{}_{}".format(i+1, j),
+                             "to": "bot" + "{}_{}".format(i, j+1),
+                             "fromLane": str(l_h),
+                             "toLane": str(0),
+                             "signal_group": 5}
+                        ]
+                        conn += [
+                            {"from": "left" + "{}_{}".format(i+1, j),
+                             "to": "bot" + "{}_{}".format(i, j+1),
+                             "fromLane": str(l_h),
+                             "toLane": str(1),
+                             "signal_group": 5}
+                        ]
+
+                    "WBRT"
+                    # if l_h == 0:
+                    #     conn += [
+                    #         {"from": "top" + "{}_{}".format(i, j+1),
+                    #          "to": "right" + "{}_{}".format(i+1, j),
+                    #          "fromLane": str(l_h),
+                    #          "toLane": str(l_h),
+                    #          "signal_group": 1}
+                    #     ]
+
+                    """WBLT: FIRST AND SECOND LANE"""
+                    if l_h == 1:
+                        conn += [
+                            {"from": "top" + "{}_{}".format(i, j+1),
+                             "to": "left" + index,
+                             "fromLane": str(l_h),
+                             "toLane": str(0),
+                             "signal_group": 6}
+                        ]
+                        # conn += [
+                        #     {"from": "top" + "{}_{}".format(i, j+1),
+                        #      "to": "left" + index,
+                        #      "fromLane": str(l_h),
+                        #      "toLane": str(1),
+                        #      "signal_group": 6}
+                        # ]
+
                 con_dict[node_id] = conn
 
         return con_dict
+
+        # build connections at each inner node
+        # for i in range(self.row_num):
+        #     for j in range(self.col_num):
+        #         node_id = "{}_{}".format(i, j)
+        #         right_node_id = "{}_{}".format(i, j + 1)
+        #         top_node_id = "{}_{}".format(i + 1, j)
+
+        #         conn = []
+        #         for lane in range(0, self.vertical_lanes):
+        #             conn += new_con("bot", node_id, right_node_id, lane, 1)
+        #             conn += new_con("top", right_node_id, node_id, lane, 1)
+        #         for lane in range(0, self.horizontal_lanes):
+        #             conn += new_con("right", node_id, top_node_id, lane, 2)
+        #             conn += new_con("left", top_node_id, node_id, lane, 2)
+
+        #         conn+=new_left_conn("bot", "right", node_id, top_node_id, 1, 1)
+        #         conn+=new_left_conn("right", "top", node_id, node_id, 1, 2)
+        #         conn+=new_left_conn("left", "bot", top_node_id, right_node_id, 1, 2)
+        #         conn+=new_left_conn("top", "left", right_node_id, node_id, 1, 1)
+                
+        #         node_id = "center{}".format(i * self.col_num + j)
+        #         con_dict[node_id] = conn
+
+        # return con_dict
 
     # TODO necessary?
     def specify_edge_starts(self):

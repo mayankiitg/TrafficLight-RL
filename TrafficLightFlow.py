@@ -10,6 +10,12 @@ from flow.controllers import SimCarFollowingController, GridRouter
 from flow.core.experiment import Experiment
 from grid2 import SimpleGridScenario2
 from DoubleLaneNetwork import DoubleLaneNetwork
+from flow.envs.traffic_light_grid import TrafficLightGridPOEnv
+from flow.core.params import TrafficLightParams
+from flow.core.params import SumoLaneChangeParams
+from flow.networks import BayBridgeNetwork
+from flow.controllers import IDMController, StaticLaneChanger, ContinuousRouter
+from flow.controllers.routing_controllers import MinicityRouter
 
 
 # time horizon of a single rollout
@@ -122,8 +128,8 @@ additional_env_params = {
         ##'num_observed': 2,
         'num_observed': 10,
         'discrete': False,
-        #'tl_type': 'controlled' ## If controlled, then add "traffic_lights": true in additional_net_params
-        'tl_type': 'actuated' ## If actuated, remove "traffic_lights": true in additional_net_params
+        'tl_type': 'controlled' ## If controlled, then add "traffic_lights": true in additional_net_params
+        #'tl_type': 'actuated' ## If actuated, remove "traffic_lights": true in additional_net_params
     }
 
 
@@ -136,27 +142,67 @@ additional_net_params = {
 }
 
 vehicles = VehicleParams()
-vehicles.add(
-    veh_id='idm',
+vehicles.add( 
+    veh_id='idm', 
     acceleration_controller=(SimCarFollowingController, {}),
-    car_following_params=SumoCarFollowingParams(
-        minGap=2.5,
-        max_speed=V_ENTER,
-        speed_mode="all_checks",
-    ),
-    routing_controller=(GridRouter, {}),
+    car_following_params=SumoCarFollowingParams( minGap=2.5, max_speed=V_ENTER, speed_mode="all_checks", ), 
+    lane_change_params=SumoLaneChangeParams( lane_change_mode="strategic", model="LC2013", ), 
+    lane_change_controller=(StaticLaneChanger, {}), 
+    routing_controller=(MinicityRouter, {}),
     num_vehicles=tot_cars)
+# vehicles.add(
+#     veh_id='idm',
+#     acceleration_controller=(SimCarFollowingController, {}),
+#     car_following_params=SumoCarFollowingParams(
+#         minGap=2.5,
+#         max_speed=V_ENTER,
+#         speed_mode="all_checks",
+#     ),
+#     routing_controller=(GridRouter, {}),
+#     num_vehicles=tot_cars)
 
 initial_config, net_params = \
-    get_non_flow_params(V_ENTER, additional_net_params)
+    get_flow_params(N_ROWS,N_COLUMNS, additional_net_params)
 
+# initial_config, net_params = \
+#     get_non_flow_params(V_ENTER, additional_net_params)
+
+# traffic_lights = TrafficLightParams(baseline=False)
+# phases = [{
+#             "duration": "38",
+#             "minDur": "8",
+#             "maxDur": "45",
+#             "state": "GGGrrrGGGrrr"
+#         }, {
+#             "duration": "7",
+#             "minDur": "3",
+#             "maxDur": "7",
+#             "state": "yyyrrryyyrrr"
+#         }, {
+#             "duration": "38",
+#             "minDur": "3",
+#             "maxDur": "45",
+#             "state": "rrrGGGrrrGGG"
+#         }, {
+#             "duration": "7",
+#             "minDur": "3",
+#             "maxDur": "7",
+#             "state": "rrryyyrrryyy"
+#         }]
+
+
+# traffic_lights.add(node_id="center0", phases=phases)
+# #print("center"+str(i))
+
+        
+        
 
 flow_params = dict(
     # name of the experiment
     exp_tag='green_wave',
 
     # name of the flow environment the experiment is running on
-    env_name='PO_TrafficLightGridEnv',
+    env_name=TrafficLightGridPOEnv,
 
     # name of the scenario class the experiment is running on
     network=DoubleLaneNetwork,
@@ -169,6 +215,7 @@ flow_params = dict(
         sim_step=1,
         #render=False,
         render=True,
+        restart_instance=True
     ),
 
     # environment related parameters (see flow.core.params.EnvParams)
@@ -188,6 +235,8 @@ flow_params = dict(
     # parameters specifying the positioning of vehicles upon initialization/
     # reset (see flow.core.params.InitialConfig)
     initial=initial_config,
+
+    #tls = traffic_lights
 )
 
 exp = Experiment(flow_params)
