@@ -14,8 +14,8 @@ import torchvision.transforms as T
 import numpy as np
 
 import time
-# from TrafficLightFlow import *
-from TrafficLightDoubleLane import *
+from TrafficLightFlow import *
+from LeftTurnWithTwoLanes.TrafficLightDoubleLane import *
 from dqn_cp_pytorch import DQN, DQN_double, DQN_replay, plot_res
 from flow.envs.base import Env
 from flow.core.util import emission_to_csv

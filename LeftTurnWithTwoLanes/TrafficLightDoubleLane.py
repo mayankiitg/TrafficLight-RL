@@ -8,7 +8,6 @@ from flow.core.params import SumoParams, EnvParams, InitialConfig, NetParams, \
 from flow.core.params import VehicleParams
 from flow.controllers import SimCarFollowingController, GridRouter
 from flow.core.experiment import Experiment
-from grid2 import SimpleGridScenario2
 from DoubleLaneNetwork import DoubleLaneNetwork
 from DoubleLaneEnv import TrafficLightGridPOEnv
 from flow.core.params import TrafficLightParams
