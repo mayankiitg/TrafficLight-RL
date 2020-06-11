@@ -8,13 +8,14 @@ from torch.autograd import Variable
 import random
 import matplotlib.pyplot as plt
 from PIL import Image
-from IPython.display import clear_output
+#from IPython.display import clear_output
 import math
 import torchvision.transforms as T
 import numpy as np
 
 import time
-from TrafficLightFlow import *
+# from TrafficLightFlow import *
+from TrafficLightDoubleLane import *
 from dqn_cp_pytorch import DQN, DQN_double, DQN_replay, plot_res
 from flow.envs.base import Env
 from flow.core.util import emission_to_csv
@@ -119,23 +120,23 @@ def getDQNModel(env):
 
 if __name__ == "__main__":
 
-    num_episodes = 10
-    render = False
+    num_episodes = 1
+    InFlowProbs = [(0.05, 0.05,0.15,0.15), (0.1, 0.1,0.1,0.1), (0.15, 0.1,0.15,0.1)]
+    render = True
     if sys.argv[1] == 'baseline':
         print('Running Traffic Flow using Baseline static actions')
-        InFlowProbs = [(0.05, 0.05,0.15,0.15), (0.1, 0.1,0.1,0.1), (0.15, 0.1,0.15,0.1)]
-        env = GetTrafficLightEnv(InFlowProbs[2],render=render,evaluate=False)
+        
+        env = GetTrafficLightEnv(InFlowProbs[0],render=render,evaluate=False)
         prediction(env, num_episodes, staticBaselinePrediction)
         # for inflowProbs in InFlowProbs:
         #     env = GetTrafficLightEnv(inflowProbs,render=render,evaluate=False)
         #     prediction(env, num_episodes, staticBaselinePrediction)
     else:
         print('Running prediction using model')
-        InFlowProbs = [(0.15, 0.1,0.15,0.1)] #(0.1, 0.1,0.1,0.1)]
-        for inflowProbs in InFlowProbs:
-            env = GetTrafficLightEnv(inflowProbs,render=render,evaluate=False)
-            dqn_model = getDQNModel(env)
-            prediction(env, num_episodes, modelBasedPrediction(dqn_model))
+        #for inflowProbs in InFlowProbs:
+        env = GetTrafficLightEnv(inflowProbs,render=render,evaluate=False)
+        dqn_model = getDQNModel(env)
+        prediction(env, num_episodes, modelBasedPrediction(dqn_model))
 
 
 
