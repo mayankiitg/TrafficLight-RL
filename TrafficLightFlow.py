@@ -19,7 +19,7 @@ from flow.controllers.routing_controllers import MinicityRouter
 
 
 # time horizon of a single rollout
-HORIZON = 200
+HORIZON = 2000
 # number of rollouts per training iteration
 #N_ROLLOUTS = 20
 N_ROLLOUTS = 1
@@ -52,7 +52,7 @@ def get_flow_params(col_num, row_num, additional_net_params):
         inflow.add(
             veh_type='idm',
             edge=outer_edges[i],
-            probability=0.25,
+            probability=0.05,
             departLane='free',
             departSpeed=20)
 
@@ -145,7 +145,7 @@ vehicles = VehicleParams()
 vehicles.add( 
     veh_id='idm', 
     acceleration_controller=(SimCarFollowingController, {}),
-    car_following_params=SumoCarFollowingParams( minGap=2.5, max_speed=V_ENTER, speed_mode="all_checks", ), 
+    car_following_params=SumoCarFollowingParams( min_gap=2.5, max_speed=V_ENTER, speed_mode="all_checks",tau=1.1 ), 
     lane_change_params=SumoLaneChangeParams( lane_change_mode="strategic", model="LC2013", ), 
     lane_change_controller=(StaticLaneChanger, {}), 
     routing_controller=(MinicityRouter, {}),
@@ -212,7 +212,7 @@ flow_params = dict(
 
     # sumo-related parameters (see flow.core.params.SumoParams)
     sim=SumoParams(
-        sim_step=1,
+        sim_step=0.1,
         #render=False,
         render=True,
         restart_instance=True
@@ -239,5 +239,5 @@ flow_params = dict(
     #tls = traffic_lights
 )
 
-exp = Experiment(flow_params)
-exp.run(1, convert_to_csv=False)
+# exp = Experiment(flow_params)
+# exp.run(1, convert_to_csv=False)
