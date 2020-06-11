@@ -1,6 +1,6 @@
 # TrafficLight-RL
 
-This is Reinforcement Learning Project to Build RL agent to control Traffic light in a 4 way intersection to optimize traffic flow. Main aim is to minimize average waiting time of vehicles and increase average velocities.
+This is Reinforcement Learning Project to Build RL agent to control Traffic light in a 4 way intersection to optimize traffic flow. Main aim is to minimize average waiting time of vehicles and increase average velocities. This is course project for CS221 course of Stanford University. 
 
 ## Simulator Used and Environement Setup:
 
