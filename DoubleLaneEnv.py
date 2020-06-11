@@ -721,11 +721,21 @@ class TrafficLightGridPOEnv(TrafficLightGridEnv):
 
     def compute_reward(self, rl_actions, **kwargs):
         """See class definition."""
+        r=0
+        if rl_actions is not None:
+            r = - rewards.boolean_action_penalty(rl_actions >= 0.5, gain=2)
+            
+                
+
         if self.env_params.evaluate:
-            return - rewards.min_delay_unscaled(self)
+            r +=  - rewards.min_delay_unscaled(self) 
+            #print(f"Reward computed: {r}, rl_actions: {rl_actions}")
+           
         else:
-            return (- rewards.min_delay_unscaled(self) +
+            r += (- rewards.min_delay_unscaled(self) +
                     rewards.penalize_standstill(self, gain=0.2))
+        print(f"Reward computed: {r}, rl_actions: {rl_actions}")
+        return r
 
     def additional_command(self):
         """See class definition."""

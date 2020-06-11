@@ -116,7 +116,7 @@ def getDQNModel(env):
     # Learning rate
     lr = 0.002
     dqn_model = DQN_double(n_state, n_action, n_hidden, lr)
-    return LoadModel(dqn_model, 'DQL_Replay_dense_500.pkl')
+    return LoadModel(dqn_model, 'DQL_Replay_500.pkl')
 
 if __name__ == "__main__":
 
@@ -134,7 +134,7 @@ if __name__ == "__main__":
     else:
         print('Running prediction using model')
         #for inflowProbs in InFlowProbs:
-        env = GetTrafficLightEnv(inflowProbs,render=render,evaluate=False)
+        env = GetTrafficLightEnv(InFlowProbs[0],render=render,evaluate=False)
         dqn_model = getDQNModel(env)
         prediction(env, num_episodes, modelBasedPrediction(dqn_model))
 

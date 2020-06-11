@@ -19,7 +19,6 @@ import torchvision.transforms as T
 import numpy as np
 
 import time
-from TrafficLightFlow import *
 
 # %% [markdown]
 # ## Environment

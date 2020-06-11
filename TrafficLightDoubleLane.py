@@ -145,11 +145,11 @@ grid_array = {
 }
 
 additional_env_params = {
-        'target_velocity': 50,
-        'switch_time': 3.0,
+        'target_velocity': 35,
+        'switch_time': 4.0,
         ##'num_observed': 2,
         'num_observed': 10,
-        'discrete': False,
+        'discrete': True,
         'tl_type': 'controlled' ## If controlled, then add "traffic_lights": true in additional_net_params
         #'tl_type': 'actuated' ## If actuated, remove "traffic_lights": true in additional_net_params
     }
